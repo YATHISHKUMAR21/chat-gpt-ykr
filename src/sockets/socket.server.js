@@ -48,7 +48,27 @@ function initSocketServer(httpServer){
 
             })
 
-            const aiResponse = await aiService.generateResponse(messagePayload.content);
+            const chatHistory = (await messageModel.find({chat: messagePayload.chat})).sort(({createdAt: -1}).limit(4).lean()).reverse();  
+            //fetch last 4 messages for context, sorted by creation time in descending order,
+            //  then reversed to get the correct sequence
+
+            // console.log("chat history: ", chatHistory.map(item=>{
+            //     return {  
+            //           role: item.role,
+            //           parts : [{ text: item.content }]
+            //     };
+            // }));
+
+
+
+            const aiResponse = await aiService.generateResponse(chatHistory.map(item=>{
+                return {  
+                      role: item.role,
+                      parts : [{ text: item.content }]
+                };
+            }));
+
+             
             console.log("ai response: ", aiResponse);
 
             await messageModel.create({
