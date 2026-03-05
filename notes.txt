@@ -1,0 +1,18 @@
+vectors concept
+
+vectors array of number where it is greater than -1 and less than 1
+
+i have red cart => [0.12345677 , 0.98765431,0.45678123]
+do u have idea about car => [0.12345000, 0.981234221 , 0.454123121]
+
+    y
+     |
+     |
+     |
+     |
+     |
+    /  \
+   /    \
+  /      \
+ /        \
+z           x  

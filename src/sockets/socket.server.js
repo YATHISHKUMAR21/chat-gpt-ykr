@@ -47,9 +47,15 @@ function initSocketServer(httpServer){
                 role : "user"
 
             })
+            //this is the short term memory for ai to generate response, we fetch last 20 messages from the database for the current chat,
+            //  sorted by creation time in descending order, 
+            // then reverse it to get the correct sequence for ai context
+            
+            const chatHistory = (await messageModel.find({chat: messagePayload.chat})).sort(({createdAt: -1})
+            .limit(20).lean()).reverse();  
 
-            const chatHistory = (await messageModel.find({chat: messagePayload.chat})).sort(({createdAt: -1}).limit(4).lean()).reverse();  
-            //fetch last 4 messages for context, sorted by creation time in descending order,
+
+            //fetch last 20 messages for context, sorted by creation time in descending order,
             //  then reversed to get the correct sequence
 
             // console.log("chat history: ", chatHistory.map(item=>{
@@ -78,6 +84,7 @@ function initSocketServer(httpServer){
                 role : "model"
 
             });
+
             
             socket.emit("ai-response", {
                 content : aiResponse,
