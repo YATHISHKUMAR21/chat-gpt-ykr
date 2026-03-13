@@ -16,3 +16,5 @@ do u have idea about car => [0.12345000, 0.981234221 , 0.454123121]
   /      \
  /        \
 z           x  
+
+learned the vectors and long and small data context tokens etc
