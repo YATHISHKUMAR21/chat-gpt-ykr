@@ -5,6 +5,7 @@ const UserModel = require('../models/user.model');
 const aiService = require('../services/ai.service');
 const messageModel = require('../models/message.model');
 const { createMemory, queryMemory } = require('../services/vector.service');
+const { text } = require("express");
 
 
 console.log("today")
@@ -48,18 +49,24 @@ function initSocketServer(httpServer){
 
             });
 
-             const vectors = await aiService.generateVector(messagePayload.content);
-            //  console.log("generated vectors: ", vectors);
+            console.log("Message created with ID:", message._id);
 
-            await createMemory({
-                vectors,
-                messageId : message._id,
-                metadata : {
-                    
-                    chat : messagePayload.chat,
-                    user : socket.user._id,
-                }
-            })
+             const vectors = await aiService.generateVector(messagePayload.content);
+
+            if(message._id) {
+                await createMemory({
+                    vectors,
+                    messageId : message._id,
+                    metadata : {
+                        id: String(message._id),
+                        chat : messagePayload.chat,
+                        user : socket.user._id,
+                        text : messagePayload.content
+                    }
+                })
+            } else {
+                console.error("Message ID is undefined, skipping vector storage");
+            }
 
 
            
@@ -102,22 +109,25 @@ function initSocketServer(httpServer){
                 role : "model"
 
             });
+            
+            console.log("Response message created with ID:", responseMessage._id);
+            
             const responseVectors = await aiService.generateVector(aiResponse);
-            await createMemory({  
-                vectors : responseVectors,
-                messageId : responseMessage._id,
-                metadata : {
-                    chat : messagePayload.chat,
-                    user : socket.user._id,
-                }
-            })
-
-           
-
             
-
-            
-            // console.log("generated response vectors: ", responseVectors);
+            if(responseMessage._id) {
+                await createMemory({  
+                    vectors : responseVectors,
+                    messageId : responseMessage._id,
+                    metadata : {
+                        id: String(responseMessage._id),
+                        chat : messagePayload.chat,
+                        user : socket.user._id,
+                        text : aiResponse
+                    }
+                })
+            } else {
+                console.error("Response message ID is undefined, skipping vector storage");
+            }
 
             
             socket.emit("ai-response", {
