@@ -40,7 +40,7 @@ function initSocketServer(httpServer){
 
             socket.on("ai-message", async(messagePayload)=>{
 
-            console.log("received ai-message: ", messagePayload);  //chatid and content
+            // console.log("received ai-message: ", messagePayload);  //chatid and content
 
             const message =  await messageModel.create({
                 chat : messagePayload.chat,
@@ -59,9 +59,11 @@ function initSocketServer(httpServer){
                 queryVector: vectors,
                 limit: 3,
                 metadata : {
-                   
+                   user : socket.user._id
                 }
             });
+
+            console.log("memory query results: ", memory);
 
             if(message._id) {
                 await createMemory({
@@ -101,14 +103,37 @@ function initSocketServer(httpServer){
             //     };
             // }));
 
-
-
-            const aiResponse = await aiService.generateResponse(chatHistory.map(item=>{
+            const stm = chatHistory.map(item=>{
                 return {  
                       role: item.role,
                       parts : [{ text: item.content }]
                 };
-            }));
+            });
+
+            const ltm = [
+                {
+                    role : "user",
+                    parts : [
+                        {
+                            text : `
+                            
+                            these are some previous messages from
+                            the chats , use them to generate response
+                            ${memory.map(item=> item.metadata.text).join("\n")}
+                              
+                            
+                            `
+                        }
+                    ]
+                }
+            ]
+
+         ([...stm, ...ltm]).map(item=>{
+            console.log("item: ", item);
+         })
+      
+
+            const aiResponse = await aiService.generateResponse(...ltm);
 
              
             // console.log("ai response: ", aiResponse);

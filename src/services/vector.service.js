@@ -48,8 +48,11 @@ async function queryMemory({queryVector, limit = 5, metadata}){
         vector: queryVector,
         topK: limit,
         filter : metadata ? { metadata } : undefined,
-        includeMetadata: true
+        includeMetadata: true,
+        includeValues: false
     });
+    
+    console.log("Query results:", data.matches);
     return data.matches;
 
 }
