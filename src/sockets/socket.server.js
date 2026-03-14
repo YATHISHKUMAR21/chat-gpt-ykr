@@ -38,10 +38,11 @@ function initSocketServer(httpServer){
         // console.log("socket user: ", socket.user)
         // console.log("new socket connection: ", socket.id);
 
-        socket.on("ai-message", async(messagePayload)=>{
+            socket.on("ai-message", async(messagePayload)=>{
 
             console.log("received ai-message: ", messagePayload);  //chatid and content
-       const message =  await messageModel.create({
+
+            const message =  await messageModel.create({
                 chat : messagePayload.chat,
                 user : socket.user._id,
                 content : messagePayload.content,
@@ -52,6 +53,15 @@ function initSocketServer(httpServer){
             console.log("Message created with ID:", message._id);
 
              const vectors = await aiService.generateVector(messagePayload.content);
+
+
+           const memory = await queryMemory({
+                queryVector: vectors,
+                limit: 3,
+                metadata : {
+                   
+                }
+            });
 
             if(message._id) {
                 await createMemory({
@@ -69,7 +79,8 @@ function initSocketServer(httpServer){
             }
 
 
-           
+
+            console.log("retrieved memory: ", memory);
 
             
             //this is the short term memory for ai to generate response, we fetch last 20 messages from the database for the current chat,
@@ -100,7 +111,7 @@ function initSocketServer(httpServer){
             }));
 
              
-            console.log("ai response: ", aiResponse);
+            // console.log("ai response: ", aiResponse);
 
            const responseMessage =  await messageModel.create({
                 chat : messagePayload.chat,

@@ -23,7 +23,8 @@ async function createMemory({vectors, metadata , messageId}){
             values: plainArrayVectors,
             metadata: {
                 chat: String(metadata.chat),
-                user: String(metadata.user)
+                user: String(metadata.user),
+                text: String(metadata.text || "").substring(0, 1000)  // Limit text to 1000 chars
             }
         };
         
@@ -42,6 +43,7 @@ async function createMemory({vectors, metadata , messageId}){
 }
 
 async function queryMemory({queryVector, limit = 5, metadata}){
+
     const data = await cohortChatGptIndex.query({
         vector: queryVector,
         topK: limit,
