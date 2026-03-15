@@ -18,3 +18,13 @@ do u have idea about car => [0.12345000, 0.981234221 , 0.454123121]
 z           x  
 
 learned the vectors and long and small data context tokens etc
+
+
+
+
+now we need to optimise the code , make it async
+
+user message saved in db.  - 2sec
+generate vector for user message --3sec
+query pinecode for related memories. --4 sec
+save user message in pinecone. --- 

@@ -42,29 +42,30 @@ function initSocketServer(httpServer){
 
             // console.log("received ai-message: ", messagePayload);  //chatid and content
 
-            const message =  await messageModel.create({
-                chat : messagePayload.chat,
-                user : socket.user._id,
-                content : messagePayload.content,
-                role : "user"
+            // const message =  await messageModel.create({
+            //     chat : messagePayload.chat,
+            //     user : socket.user._id,
+            //     content : messagePayload.content,
+            //     role : "user"
 
-            });
+            // });
 
-            console.log("Message created with ID:", message._id);
+            // console.log("Message created with ID:", message._id);
 
-             const vectors = await aiService.generateVector(messagePayload.content);
+            // const vectors = await aiService.generateVector(messagePayload.content);
 
+            // Parallelize message creation and vector generation
+            const [message , vectors] = await Promise.all([
+                messageModel.create({
+                    chat : messagePayload.chat,
+                    user : socket.user._id,
+                    content : messagePayload.content,
+                    role : "user"
+                }),
+                aiService.generateVector(messagePayload.content)
+            ]);
 
-           const memory = await queryMemory({
-                queryVector: vectors,
-                limit: 3,
-                metadata : {
-                   user : socket.user._id
-                }
-            });
-
-            console.log("memory query results: ", memory);
-
+            // Store in vector memory after getting both message and vectors
             if(message._id) {
                 await createMemory({
                     vectors,
@@ -76,21 +77,61 @@ function initSocketServer(httpServer){
                         text : messagePayload.content
                     }
                 })
-            } else {
-                console.error("Message ID is undefined, skipping vector storage");
             }
 
 
+        //    const memory = await queryMemory({
+        //         queryVector: vectors,
+        //         limit: 3,
+        //         metadata : {
+        //            user : socket.user._id
+        //         }
+        //     });
 
-            console.log("retrieved memory: ", memory);
+            // console.log("memory query results: ", memory);
+
+            // if(message._id) {
+            //     await createMemory({
+            //         vectors,
+            //         messageId : message._id,
+            //         metadata : {
+            //             id: String(message._id),
+            //             chat : messagePayload.chat,
+            //             user : socket.user._id,
+            //             text : messagePayload.content
+            //         }
+            //     })
+            // } else {
+            //     console.error("Message ID is undefined, skipping vector storage");
+            // }
+
+
+
+            // console.log("retrieved memory: ", memory);
 
             
             //this is the short term memory for ai to generate response, we fetch last 20 messages from the database for the current chat,
             //  sorted by creation time in descending order, 
             // then reverse it to get the correct sequence for ai context
 
-            const chatHistory = (await messageModel.find({chat: messagePayload.chat}).sort({createdAt: -1})
-            .limit(20).lean()).reverse();  
+            // const chatHistory = (await messageModel.find({chat: messagePayload.chat}).sort({createdAt: -1})
+            // .limit(20).lean()).reverse();  
+
+            // Parallelize memory query and chat history fetch
+            const [memory, chatHistoryUnsorted] = await Promise.all([
+                queryMemory({
+                    queryVector: vectors,
+                    limit: 3,
+                    metadata : {
+                       user : socket.user._id
+                    }
+                }),
+                messageModel.find({chat: messagePayload.chat}).sort({createdAt: -1})
+                .limit(20).lean()
+            ]);
+
+            // Reverse to get correct sequence for AI context
+            const chatHistory = chatHistoryUnsorted.reverse();
 
 
             //fetch last 20 messages for context, sorted by creation time in descending order,
@@ -126,29 +167,48 @@ function initSocketServer(httpServer){
                         }
                     ]
                 }
-            ]
+            ];
 
-         ([...stm, ...ltm]).map(item=>{
-            console.log("item: ", item);
-         })
+            // Log the combined context
+            ([...stm, ...ltm]).map(item=>{
+                console.log("item: ", item);
+            });
       
-
-            const aiResponse = await aiService.generateResponse(...ltm);
+            const aiResponse = await aiService.generateResponse([...stm, ...ltm]);
 
              
             // console.log("ai response: ", aiResponse);
 
-           const responseMessage =  await messageModel.create({
+        //    const responseMessage =  await messageModel.create({
+        //         chat : messagePayload.chat,
+        //         user : socket.user._id,
+        //         content : aiResponse,
+        //         role : "model"
+
+        //     });
+            
+        //     console.log("Response message created with ID:", responseMessage._id);
+            
+        //     const responseVectors = await aiService.generateVector(aiResponse);
+
+
+        
+            socket.emit("ai-response", {
+                content : aiResponse,
+                chat : messagePayload.chat
+
+            });
+
+        const [responseMessage, responseVectors] = await Promise.all([
+            messageModel.create({
                 chat : messagePayload.chat,
                 user : socket.user._id,
                 content : aiResponse,
                 role : "model"
 
-            });
-            
-            console.log("Response message created with ID:", responseMessage._id);
-            
-            const responseVectors = await aiService.generateVector(aiResponse);
+            }),
+            aiService.generateVector(aiResponse)
+        ]);
             
             if(responseMessage._id) {
                 await createMemory({  
@@ -166,11 +226,6 @@ function initSocketServer(httpServer){
             }
 
             
-            socket.emit("ai-response", {
-                content : aiResponse,
-                chat : messagePayload.chat
-
-            })
         })
 
     });

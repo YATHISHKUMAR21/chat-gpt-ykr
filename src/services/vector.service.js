@@ -44,10 +44,18 @@ async function createMemory({vectors, metadata , messageId}){
 
 async function queryMemory({queryVector, limit = 5, metadata}){
 
+    // Build filter for Pinecone - it expects individual field conditions
+    let filterCondition = undefined;
+    if(metadata && metadata.user) {
+        filterCondition = {
+            "user": {"$eq": metadata.user}
+        };
+    }
+
     const data = await cohortChatGptIndex.query({
         vector: queryVector,
         topK: limit,
-        filter : metadata ? { metadata } : undefined,
+        filter : filterCondition,
         includeMetadata: true,
         includeValues: false
     });
