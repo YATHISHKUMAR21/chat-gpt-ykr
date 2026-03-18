@@ -6,7 +6,7 @@ const cors = require('cors');
 const authRoutes = require('./routes/auth.routes');
 
 //chat routes
-const chatRoutes = require('./routes/chat.routes');
+const chatRoutes = require('./routes/chat.routes.js');
 
 
 const app = express();
