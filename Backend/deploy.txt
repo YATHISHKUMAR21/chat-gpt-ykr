@@ -1,0 +1,12 @@
+render.com
+
+sign in via github
+
+inside environment variables add all the env.list
+
+post that add npm i 
+
+node server.js
+
+
+dont know about mongodb , he have changed from local to production will see how it works
