@@ -21,7 +21,7 @@ app.use('/api/chat', chatRoutes);
 
 // root route
 app.get("/", (req, res) => {
-    res.json({ message: "API is running 🚀" });
+    res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
 module.exports = app;
