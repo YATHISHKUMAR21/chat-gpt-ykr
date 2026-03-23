@@ -1,6 +1,6 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const cors = require('cors');
+const path = require('path');
 
 // routes
 const authRoutes = require('./routes/auth.routes');
@@ -8,19 +8,19 @@ const chatRoutes = require('./routes/chat.routes.js');
 
 const app = express();
 
-app.use(cors({
-    origin: 'http://localhost:5173',
-    credentials: true,
-}));
-
+// middleware
 app.use(cookieParser());
 app.use(express.json());
 
+// ✅ Serve frontend (VERY IMPORTANT)
+app.use(express.static(path.join(__dirname, '../public')));
+
+// ✅ API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRoutes);
 
-// root route
-app.get("/", (req, res) => {
+// ✅ React fallback (VERY IMPORTANT)
+app.get("*", (req, res) => {
     res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
